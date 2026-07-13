@@ -10,8 +10,8 @@ services:
     #   - "3000:3000"
     environment:
       # Public base URL — the domain Coolify assigns to this app.
-      # Short links are minted on this domain, e.g. https://hct.gg/abc123
-      - APP_URL=${APP_URL:?set APP_URL to the public URL, e.g. https://hct.gg}
+      # Short links are minted on this domain, e.g. https://domain.com/abc123
+      - APP_URL=${APP_URL:?set APP_URL to the public URL, e.g. https://domain.com}
       - ADMIN_PASSWORD=${ADMIN_PASSWORD:?set ADMIN_PASSWORD for dashboard login}
       - SESSION_SECRET=${SESSION_SECRET:?set SESSION_SECRET (openssl rand -hex 32)}
       - PORT=3000

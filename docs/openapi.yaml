@@ -287,7 +287,7 @@ components:
         shortUrl:
           type: string
           format: uri
-          example: https://hct.gg/abc123
+          example: https://domain.com/abc123
         url:
           type: string
           format: uri

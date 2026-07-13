@@ -5,7 +5,7 @@ import { openMemoryDb, type DB } from '../src/db.js';
 import type { Config } from '../src/config.js';
 
 const config: Config = {
-  appUrl: 'https://hct.gg',
+  appUrl: 'https://domain.com',
   adminPassword: 'test-password',
   sessionSecret: 'test-session-secret',
   port: 0,
@@ -76,7 +76,7 @@ describe('links API', () => {
     expect(res.statusCode).toBe(201);
     const body = res.json();
     expect(body.code).toMatch(/^[1-9A-HJ-NP-Za-km-z]{6}$/);
-    expect(body.shortUrl).toBe(`https://hct.gg/${body.code}`);
+    expect(body.shortUrl).toBe(`https://domain.com/${body.code}`);
   });
 
   it('accepts a custom code once, then 409s', async () => {
@@ -172,11 +172,11 @@ describe('public endpoints', () => {
 
     const spec = await app.inject({ method: 'GET', url: '/openapi.json' });
     expect(spec.statusCode).toBe(200);
-    expect(spec.json().servers[0].url).toBe('https://hct.gg/api');
+    expect(spec.json().servers[0].url).toBe('https://domain.com/api');
 
     const llms = await app.inject({ method: 'GET', url: '/llms.txt' });
     expect(llms.statusCode).toBe(200);
-    expect(llms.body).toContain('https://hct.gg');
+    expect(llms.body).toContain('https://domain.com');
 
     const docs = await app.inject({ method: 'GET', url: '/docs' });
     expect(docs.statusCode).toBe(200);

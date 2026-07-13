@@ -1,6 +1,6 @@
 # url-shortener
 
-A self-hosted URL shortener with a clean, minimal UI and a full REST API. Designed to be deployed behind a single domain (e.g. `https://hct.gg`) via Docker Compose — Coolify-friendly out of the box.
+A self-hosted URL shortener with a clean, minimal UI and a full REST API. Designed to be deployed behind a single domain (e.g. `https://domain.com`) via Docker Compose — Coolify-friendly out of the box.
 
 ## How it works
 
@@ -8,7 +8,7 @@ The app serves everything from one domain — the same domain you deploy it unde
 
 | Path | Purpose |
 |---|---|
-| `/:code` | Public redirect — the short link itself (e.g. `https://hct.gg/abc123`) |
+| `/:code` | Public redirect — the short link itself (e.g. `https://domain.com/abc123`) |
 | `/` | Landing page / login |
 | `/dashboard` | Admin dashboard (create/manage links, view stats, manage API keys) |
 | `/api/*` | REST API (Bearer token auth via API key) |
@@ -38,13 +38,13 @@ cp .env.example .env   # set ADMIN_PASSWORD and APP_URL
 docker compose up -d
 ```
 
-In Coolify: create a new Docker Compose resource pointing at this repo, set the environment variables from `.env.example`, and assign your domain (e.g. `https://hct.gg`). The domain you assign is the domain short links are minted on.
+In Coolify: create a new Docker Compose resource pointing at this repo, set the environment variables from `.env.example`, and assign your domain (e.g. `https://domain.com`). The domain you assign is the domain short links are minted on.
 
 ### Environment variables
 
 | Variable | Required | Description |
 |---|---|---|
-| `APP_URL` | yes | Public base URL of the deployment, e.g. `https://hct.gg`. Used when minting short links. |
+| `APP_URL` | yes | Public base URL of the deployment, e.g. `https://domain.com`. Used when minting short links. |
 | `ADMIN_PASSWORD` | yes | Password for the admin login. |
 | `SESSION_SECRET` | yes | Random string used to sign session cookies. Generate with `openssl rand -hex 32`. |
 | `PORT` | no | Internal listen port (default `3000`). |
@@ -54,12 +54,12 @@ In Coolify: create a new Docker Compose resource pointing at this repo, set the 
 
 ```bash
 # Create a short link
-curl -X POST https://hct.gg/api/links \
+curl -X POST https://domain.com/api/links \
   -H "Authorization: Bearer <your-api-key>" \
   -H "Content-Type: application/json" \
   -d '{"url": "https://example.com/very/long/url", "code": "optional-custom-alias"}'
 
-# → {"code": "abc123", "shortUrl": "https://hct.gg/abc123", "url": "https://example.com/very/long/url", ...}
+# → {"code": "abc123", "shortUrl": "https://domain.com/abc123", "url": "https://example.com/very/long/url", ...}
 ```
 
 Full documentation lives at `https://<your-domain>/docs` once deployed. The draft spec is in [`docs/openapi.yaml`](docs/openapi.yaml).

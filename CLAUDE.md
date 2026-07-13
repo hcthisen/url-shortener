@@ -4,7 +4,7 @@ Guidance for Claude Code when working in this repository.
 
 ## What this project is
 
-A self-hosted URL shortener deployed as a single Docker container (via `docker-compose.yaml`, hosted on Coolify). The domain the app is deployed under **is** the short-link domain: deployed at `https://hct.gg`, it mints links like `https://hct.gg/abc123`. One app serves the redirects, the dashboard UI, the REST API, and the public API docs.
+A self-hosted URL shortener deployed as a single Docker container (via `docker-compose.yaml`, hosted on Coolify). The domain the app is deployed under **is** the short-link domain: deployed at `https://domain.com`, it mints links like `https://domain.com/abc123`. One app serves the redirects, the dashboard UI, the REST API, and the public API docs.
 
 ## Architecture decisions (the contract — do not deviate without asking)
 
