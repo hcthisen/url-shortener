@@ -2,8 +2,12 @@ services:
   app:
     build: .
     restart: unless-stopped
-    ports:
-      - "3000:3000"
+    # No host port binding — Coolify's proxy reaches the container on the
+    # internal network. For plain docker-compose use, uncomment `ports`.
+    expose:
+      - "3000"
+    # ports:
+    #   - "3000:3000"
     environment:
       # Public base URL — the domain Coolify assigns to this app.
       # Short links are minted on this domain, e.g. https://hct.gg/abc123
