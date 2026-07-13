@@ -1,0 +1,53 @@
+# URL Shortener API
+
+Self-hosted URL shortener. This instance mints short links on its own domain
+(the domain you are reading this from). Full interactive docs: /docs
+Machine-readable OpenAPI 3.1 spec: /openapi.json
+
+## Authentication
+
+Every API request needs an API key as a Bearer token:
+
+    Authorization: Bearer sk_<key>
+
+Keys are issued by the instance administrator in the dashboard.
+
+## Endpoints (all under /api)
+
+POST   /api/links              Create a short link.
+                               Body: {"url": "<destination>", "code": "<optional custom alias>", "note": "<optional>"}
+                               Returns 201 with {"code", "shortUrl", "url", "note", "clicks", "createdAt", "updatedAt"}
+                               409 if the code is taken, 400 if it is invalid or reserved.
+GET    /api/links              List links. Query: limit (<=200), offset, search.
+                               Returns {"items": [...], "total": n}; each item includes
+                               "sparkline": clicks per day over the last 7 days.
+GET    /api/links/{code}       Get one link.
+PATCH  /api/links/{code}       Update destination url and/or note.
+DELETE /api/links/{code}       Delete. Returns 204.
+GET    /api/links/{code}/stats Click stats. Query: days (default 7, max 365).
+                               Returns {"code", "days", "totalClicks", "clicksInRange",
+                               "clicksByDay": [{"date", "clicks"}, ... zero-filled oldest first],
+                               "topReferrers": [{"referrer", "clicks"}]}
+GET    /api/links/{code}/qr    QR code for the short link as image/svg+xml.
+GET    /api/stats              Account-wide stats. Query: days (default 7, max 365).
+                               Returns {"days", "totalLinks", "totalClicks", "clicksInRange",
+                               "clicksByDay": [...], "topLinks": [{"code", "url", "clicks"}]}
+
+## Errors
+
+JSON: {"error": {"code": "<machine_code>", "message": "<human message>"}}
+Statuses: 400 invalid input, 401 bad/missing key, 404 unknown code, 409 code conflict.
+
+## Notes
+
+- Custom codes match [a-zA-Z0-9_-]{1,64} and must not collide with reserved
+  paths (api, dashboard, login, docs, ...).
+- Redirects are 302, so destinations can be edited without breaking the code.
+- API keys cannot manage other API keys; that requires the dashboard.
+
+## Example
+
+    curl -X POST https://<domain>/api/links \
+      -H "Authorization: Bearer sk_..." \
+      -H "Content-Type: application/json" \
+      -d '{"url": "https://example.com/long/path"}'

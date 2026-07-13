@@ -1,0 +1,25 @@
+services:
+  app:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      # Public base URL — the domain Coolify assigns to this app.
+      # Short links are minted on this domain, e.g. https://hct.gg/abc123
+      - APP_URL=${APP_URL:?set APP_URL to the public URL, e.g. https://hct.gg}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:?set ADMIN_PASSWORD for dashboard login}
+      - SESSION_SECRET=${SESSION_SECRET:?set SESSION_SECRET (openssl rand -hex 32)}
+      - PORT=3000
+      - DATA_DIR=/data
+    volumes:
+      - shortener-data:/data
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3000/healthz"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+volumes:
+  shortener-data:

@@ -1,0 +1,12 @@
+node_modules
+dist
+build
+.env
+.env.*
+*.sqlite
+*.db
+data
+.git
+.gitignore
+README.md
+CLAUDE.md

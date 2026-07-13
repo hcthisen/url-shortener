@@ -1,0 +1,346 @@
+openapi: 3.1.0
+info:
+  title: URL Shortener API
+  version: 1.0.0
+  description: |
+    REST API for the self-hosted URL shortener.
+
+    All endpoints require an API key sent as a Bearer token:
+
+    ```
+    Authorization: Bearer sk_...
+    ```
+
+    API keys are created and revoked in the dashboard at `/dashboard`.
+    Short links are minted on this deployment's domain (the `APP_URL`).
+
+    Interactive documentation for this spec is served publicly at `/docs`,
+    the raw spec at `/openapi.json`, and an LLM-friendly summary at `/llms.txt`.
+servers:
+  - url: /api
+security:
+  - bearerAuth: []
+tags:
+  - name: links
+    description: Create and manage short links
+  - name: stats
+    description: Click analytics, per link and account-wide
+paths:
+  /links:
+    post:
+      tags: [links]
+      operationId: createLink
+      summary: Create a short link
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [url]
+              properties:
+                url:
+                  type: string
+                  format: uri
+                  description: Destination URL to shorten.
+                  example: https://example.com/very/long/url
+                code:
+                  type: string
+                  pattern: '^[a-zA-Z0-9_-]{1,64}$'
+                  description: >
+                    Optional custom alias. Must not collide with an existing
+                    code or a reserved path (api, dashboard, login, docs, ...).
+                    If omitted, a random 6-character code is generated.
+                  example: launch
+                note:
+                  type: string
+                  description: Optional free-text note shown in the dashboard.
+      responses:
+        '201':
+          description: Link created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Link'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          description: The requested code is already taken or reserved.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    get:
+      tags: [links]
+      operationId: listLinks
+      summary: List short links
+      parameters:
+        - name: limit
+          in: query
+          schema: { type: integer, default: 50, maximum: 200 }
+        - name: offset
+          in: query
+          schema: { type: integer, default: 0 }
+        - name: search
+          in: query
+          description: Filter by code, destination URL, or note.
+          schema: { type: string }
+      responses:
+        '200':
+          description: Paginated list of links.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Link'
+                  total:
+                    type: integer
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /links/{code}:
+    parameters:
+      - name: code
+        in: path
+        required: true
+        schema: { type: string }
+    get:
+      tags: [links]
+      operationId: getLink
+      summary: Get a short link
+      responses:
+        '200':
+          description: The link.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Link'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    patch:
+      tags: [links]
+      operationId: updateLink
+      summary: Update a short link
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                url:
+                  type: string
+                  format: uri
+                  description: New destination URL.
+                note:
+                  type: string
+      responses:
+        '200':
+          description: Updated link.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Link'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags: [links]
+      operationId: deleteLink
+      summary: Delete a short link
+      responses:
+        '204':
+          description: Deleted.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /links/{code}/stats:
+    get:
+      tags: [stats]
+      operationId: getLinkStats
+      summary: Get click statistics for a short link
+      parameters:
+        - name: code
+          in: path
+          required: true
+          schema: { type: string }
+        - $ref: '#/components/parameters/Days'
+      responses:
+        '200':
+          description: Click statistics for the selected range (default last 7 days).
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code: { type: string }
+                  days: { type: integer, example: 7 }
+                  totalClicks:
+                    type: integer
+                    description: All-time click count for this link.
+                  clicksInRange:
+                    type: integer
+                    description: Clicks within the selected range.
+                  clicksByDay:
+                    type: array
+                    description: One entry per day in the range (zero-filled), oldest first.
+                    items:
+                      $ref: '#/components/schemas/DayCount'
+                  topReferrers:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        referrer: { type: string, example: "https://news.ycombinator.com/" }
+                        clicks: { type: integer }
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /links/{code}/qr:
+    get:
+      tags: [links]
+      operationId: getLinkQr
+      summary: Get a QR code for a short link
+      description: Returns an SVG QR code pointing at the short URL.
+      parameters:
+        - name: code
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: QR code image.
+          content:
+            image/svg+xml:
+              schema: { type: string }
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /stats:
+    get:
+      tags: [stats]
+      operationId: getAccountStats
+      summary: Get account-wide click statistics
+      parameters:
+        - $ref: '#/components/parameters/Days'
+      responses:
+        '200':
+          description: Aggregate statistics across all links.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  days: { type: integer, example: 7 }
+                  totalLinks: { type: integer }
+                  totalClicks:
+                    type: integer
+                    description: All-time clicks across all links.
+                  clicksInRange: { type: integer }
+                  clicksByDay:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/DayCount'
+                  topLinks:
+                    type: array
+                    description: Most-clicked links within the range.
+                    items:
+                      type: object
+                      properties:
+                        code: { type: string }
+                        url: { type: string, format: uri }
+                        clicks: { type: integer }
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+components:
+  parameters:
+    Days:
+      name: days
+      in: query
+      description: Size of the date range in days, ending today (UTC). Default 7, max 365.
+      schema: { type: integer, default: 7, minimum: 1, maximum: 365 }
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: API key created in the dashboard, e.g. `sk_...`
+  schemas:
+    Link:
+      type: object
+      properties:
+        code:
+          type: string
+          example: abc123
+        shortUrl:
+          type: string
+          format: uri
+          example: https://hct.gg/abc123
+        url:
+          type: string
+          format: uri
+          example: https://example.com/very/long/url
+        note:
+          type: string
+          nullable: true
+        clicks:
+          type: integer
+          example: 42
+        sparkline:
+          type: array
+          description: Clicks per day over the last 7 days (only included when listing links).
+          items: { type: integer }
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    DayCount:
+      type: object
+      properties:
+        date: { type: string, format: date, example: "2026-07-13" }
+        clicks: { type: integer, example: 12 }
+    Error:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+              example: code_taken
+            message:
+              type: string
+              example: The code "launch" is already in use.
+  responses:
+    BadRequest:
+      description: Invalid request body or parameters.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unauthorized:
+      description: Missing or invalid API key.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFound:
+      description: No link with that code exists.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
